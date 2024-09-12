@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TESLA Pagamentos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+
+        .header {
+            background: #007bff;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .section {
+            display: none;
+            padding: 20px;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input {
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: calc(100% - 24px);
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 100%;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .message {
+            font-size: 18px;
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .payments-table {
+            margin-top: 20px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .payments-table th, .payments-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .payments-table th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        .payments-table td {
+            font-size: 14px;
+        }
+
+        .btn-cancel {
+            background-color: #dc3545;
+        }
+
+        .btn-cancel:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Maquininha de Pagamento</h2>
+        </div>
+
+        <!-- Tela de Login -->
+        <div class="login-section section" id="login-section">
+            <h2>Login</h2>
+            <input type="text" id="user-id" placeholder="Código do Cartão do Usuário" />
+            <input type="password" id="user-code" placeholder="Senha" />
+            <button onclick="login()">Entrar</button>
+        </div>
+
+        <!-- Tela de Pagamento -->
+        <div class="payment-section section" id="payment-section">
+            <h2>Realizar Pagamento</h2>
+            <input type="number" id="payment-amount" placeholder="Valor do Pagamento" />
+            <input type="password" id="payment-code" placeholder="Senha para Confirmar" />
+            <button onclick="processPayment()">Concluir Pagamento</button>
+            <button class="btn-cancel" onclick="showMainSection()">Cancelar</button>
+        </div>
+
+        <!-- Tela Principal -->
+        <div class="main-section section" id="main-section">
+            <h2>Bem-vindo!</h2>
+            <p class="message" id="user-name"></p>
+            <button onclick="showPaymentSection()">Realizar Pagamento</button>
+            <button onclick="showPayments()">Ver Pagamentos</button>
+            <button class="btn-cancel" onclick="logout()">Sair</button>
+        </div>
+
+        <!-- Tela de Pagamentos -->
+        <div class="payments-section section" id="payments-section">
+            <h2>Pagamentos Realizados</h2>
+            <table class="payments-table" id="payments-table">
+                <thead>
+                    <tr>
+                        <th>ID do Usuário</th>
+                        <th>Nome</th>
+                        <th>Valor</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Linhas de pagamentos serão inseridas aqui -->
+                </tbody>
+            </table>
+            <button class="btn-cancel" onclick="showMainSection()">Voltar</button>
+        </div>
+    </div>
+
+    <script>
+        const users = {
+            '1001': { name: 'Lorena', code: '1234', balance: 1000, payments: [] },
+            '1002': { name: 'Elinha', code: '5678', balance: 1500, payments: [] },
+            '1003': { name: 'Lana', code: '9101', balance: 2000, payments: [] },
+            '1000': { name: 'Afonso Mendes', code: '9000', balance: 2000, payments: [] }
+        };
+        let currentUser = null;
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(sectionId).style.display = 'block';
+        }
+
+        function hideSection(sectionId) {
+            document.getElementById(sectionId).style.display = 'none';
+        }
+
+        function login() {
+            const userId = document.getElementById('user-id').value;
+            const userCode = document.getElementById('user-code').value;
+            const user = users[userId];
+
+            if (user && user.code === userCode) {
+                currentUser = user;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                document.getElementById('user-name').textContent = `Olá, ${user.name}! Saldo: $${user.balance.toFixed(2)}`;
+                showSection('main-section');
+                hideSection('login-section');
+            } else {
+                alert('ID ou senha incorretos.');
+            }
+        }
+
+        function showMainSection() {
+            if (currentUser) {
+                showSection('main-section');
+                hideSection('payment-section');
+                hideSection('payments-section');
+            } else {
+                alert('Você deve estar logado para acessar esta seção.');
+            }
+        }
+
+        function showPaymentSection() {
+            if (currentUser) {
+                showSection('payment-section');
+                hideSection('main-section');
+            } else {
+                alert('Você deve estar logado para realizar um pagamento.');
+            }
+        }
+
+        function processPayment() {
+            const amount = parseFloat(document.getElementById('payment-amount').value);
+            const paymentCode = document.getElementById('payment-code').value;
+
+            if (!isNaN(amount) && amount > 0) {
+                if (paymentCode === currentUser.code) {
+                    if (amount <= currentUser.balance) {
+                        currentUser.balance -= amount;
+                        const now = new Date();
+                        const paymentDate = now.toLocaleDateString('pt-BR');
+                        const payments = JSON.parse(localStorage.getItem('payments')) || [];
+                        payments.push({ userId: currentUser.id, name: currentUser.name, amount: amount.toFixed(2), date: paymentDate });
+                        localStorage.setItem('payments', JSON.stringify(payments));
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        document.getElementById('user-name').textContent = `Olá, ${currentUser.name}! Saldo: $${currentUser.balance.toFixed(2)}`;
+                        alert('Pagamento concluído com sucesso!');
+                        showMainSection();
+                    } else {
+                        alert('Saldo insuficiente para realizar o pagamento.');
+                    }
+                } else {
+                    alert('Senha para confirmação incorreta.');
+                }
+            } else {
+                alert('Por favor, insira um valor válido para o pagamento.');
+            }
+        }
+
+        function showPayments() {
+            if (currentUser) {
+                const tableBody = document.getElementById('payments-table').querySelector('tbody');
+                tableBody.innerHTML = ''; // Limpa a tabela antes de adicionar novas linhas
+
+                const payments = JSON.parse(localStorage.getItem('payments')) || [];
+                payments.forEach(payment => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${payment.userId}</td>
+                        <td>${payment.name}</td>
+                        <td>$${payment.amount}</td>
+                        <td>${payment.date}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                showSection('payments-section');
+                hideSection('main-section');
+            } else {
+                alert('Você deve estar logado para ver os pagamentos.');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            document.getElementById('user-id').value = '';
+            document.getElementById('user-code').value = '';
+            showSection('login-section');
+            hideSection('payment-section');
+            hideSection('payments-section');
+            hideSection('main-section');
+        }
+
+        // Carregar o usuário atual do armazenamento local, se existir
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById('user-name').textContent = `Olá, ${savedUser.name}! Saldo: $${savedUser.balance.toFixed(2)}`;
+                showSection('main-section');
+            } else {
+                showSection('login-section');
+            }
+        });
+    </script>
+</body>
+</html>
