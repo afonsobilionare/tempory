@@ -87,24 +87,24 @@
             color: #333;
         }
 
-        .payments-table {
+        .payments-table, .transactions-table {
             margin-top: 20px;
             width: 100%;
             border-collapse: collapse;
         }
 
-        .payments-table th, .payments-table td {
+        .payments-table th, .transactions-table th, .payments-table td, .transactions-table td {
             padding: 12px;
             border: 1px solid #ddd;
             text-align: left;
         }
 
-        .payments-table th {
+        .payments-table th, .transactions-table th {
             background-color: #f4f4f4;
             font-weight: bold;
         }
 
-        .payments-table td {
+        .payments-table td, .transactions-table td {
             font-size: 14px;
         }
 
@@ -115,6 +115,49 @@
         .btn-cancel:hover {
             background-color: #c82333;
         }
+
+        /* Teclado Numérico */
+        .numeric-keypad {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+        }
+
+        .keypad-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .keypad-row button {
+            width: 30px;
+            height: 30px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .keypad-row button:hover {
+            background-color: #0056b3;
+        }
+
+        .keypad-row button:last-child {
+            background: #dc3545;
+        }
+
+        .keypad-row button:last-child:hover {
+            background: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -123,9 +166,18 @@
             <h2>Maquininha de Pagamento</h2>
         </div>
 
+        <!-- Tela de Login do Gerente -->
+        <div class="manager-login-section section" id="manager-login-section">
+            <h2>Login do Gerente</h2>
+            <input type="text" id="manager-id" placeholder="ID do Gerente" />
+            <input type="password" id="manager-password" placeholder="Senha" />
+            <button onclick="managerLogin()">Entrar</button>
+        </div>
+
         <!-- Tela de Login -->
         <div class="login-section section" id="login-section">
-            <h2>Login</h2>
+            <h2>TESLATem</h2>
+            <h4>Cartão de débito</h4>
             <input type="text" id="user-id" placeholder="Código do Cartão do Usuário" />
             <input type="password" id="user-code" placeholder="Senha" />
             <button onclick="login()">Entrar</button>
@@ -166,17 +218,69 @@
                 </tbody>
             </table>
             <button class="btn-cancel" onclick="showMainSection()">Voltar</button>
+            <button onclick="sendPaymentsToWhatsApp()">Enviar para WhatsApp</button>
+        </div>
+
+        <!-- Tela de Transações -->
+        <div class="transactions-section section" id="transactions-section">
+            <h2>Transações Realizadas</h2>
+            <table class="transactions-table" id="transactions-table">
+                <thead>
+                    <tr>
+                        <th>ID do Usuário</th>
+                        <th>Nome</th>
+                        <th>Valor</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Linhas de transações serão inseridas aqui -->
+                </tbody>
+            </table>
+            <button class="btn-cancel" onclick="showManagerSection()">Voltar</button>
+        </div>
+    </div>
+
+    <!-- Teclado Numérico -->
+    <div class="numeric-keypad" id="numeric-keypad">
+        <div class="keypad-row">
+            <button onclick="appendToInput('1')">1</button>
+            <button onclick="appendToInput('2')">2</button>
+            <button onclick="appendToInput('3')">3</button>
+        </div>
+        <div class="keypad-row">
+            <button onclick="appendToInput('4')">4</button>
+            <button onclick="appendToInput('5')">5</button>
+            <button onclick="appendToInput('6')">6</button>
+        </div>
+        <div class="keypad-row">
+            <button onclick="appendToInput('7')">7</button>
+            <button onclick="appendToInput('8')">8</button>
+            <button onclick="appendToInput('9')">9</button>
+        </div>
+        <div class="keypad-row">
+            <button onclick="appendToInput('0')">0</button>
+            <button onclick="clearInput()">C</button>
+            <button onclick="hideKeypad()">Close</button>
         </div>
     </div>
 
     <script>
         const users = {
-            '1001': { name: 'Lorena', code: '1234', balance: 1000, payments: [] },
-            '1002': { name: 'Elinha', code: '5678', balance: 1500, payments: [] },
-            '1003': { name: 'Lana', code: '9101', balance: 2000, payments: [] },
-            '1000': { name: 'Afonso Mendes', code: '9000', balance: 2000, payments: [] }
+            '1001': { id: '1001', name: 'Lorena', code: '1234', balance: 1000, payments: [] },
+            '1002': { id: '1002', name: 'Elinha', code: '5678', balance: 1500, payments: [] },
+            '1003': { id: '1003', name: 'Lana', code: '9101', balance: 2000, payments: [] },
+            '1000': { id: '1000', name: 'Afonso Mendes', code: '9000', balance: 2000, payments: [] }
         };
+
+        const managers = {
+            'manager1': { id: 'manager1', password: 'managerpass' } // Exemplo de gerente
+        };
+
+        const managerPhoneNumber = '+5538998279036'; // Número do gerente para enviar via WhatsApp
+
         let currentUser = null;
+        let currentManager = null;
 
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(section => {
@@ -205,6 +309,20 @@
             }
         }
 
+        function managerLogin() {
+            const managerId = document.getElementById('manager-id').value;
+            const managerPassword = document.getElementById('manager-password').value;
+            const manager = managers[managerId];
+
+            if (manager && manager.password === managerPassword) {
+                currentManager = manager;
+                showTransactions();
+                hideSection('manager-login-section');
+            } else {
+                alert('ID ou senha do gerente incorretos.');
+            }
+        }
+
         function showMainSection() {
             if (currentUser) {
                 showSection('main-section');
@@ -226,68 +344,122 @@
 
         function processPayment() {
             const amount = parseFloat(document.getElementById('payment-amount').value);
-            const paymentCode = document.getElementById('payment-code').value;
+            const code = document.getElementById('payment-code').value;
 
-            if (!isNaN(amount) && amount > 0) {
-                if (paymentCode === currentUser.code) {
-                    if (amount <= currentUser.balance) {
-                        currentUser.balance -= amount;
-                        const now = new Date();
-                        const paymentDate = now.toLocaleDateString('pt-BR');
-                        const payments = JSON.parse(localStorage.getItem('payments')) || [];
-                        payments.push({ userId: currentUser.id, name: currentUser.name, amount: amount.toFixed(2), date: paymentDate });
-                        localStorage.setItem('payments', JSON.stringify(payments));
-                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                        document.getElementById('user-name').textContent = `Olá, ${currentUser.name}! Saldo: $${currentUser.balance.toFixed(2)}`;
-                        alert('Pagamento concluído com sucesso!');
-                        showMainSection();
-                    } else {
-                        alert('Saldo insuficiente para realizar o pagamento.');
-                    }
+            if (currentUser && currentUser.code === code) {
+                if (amount > 0 && amount <= currentUser.balance) {
+                    currentUser.balance -= amount;
+                    currentUser.payments.push({ amount, date: new Date().toLocaleString() });
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    alert('Pagamento realizado com sucesso!');
+                    showMainSection();
                 } else {
-                    alert('Senha para confirmação incorreta.');
+                    alert('Valor inválido ou saldo insuficiente.');
                 }
             } else {
-                alert('Por favor, insira um valor válido para o pagamento.');
+                alert('Senha incorreta.');
             }
         }
 
         function showPayments() {
             if (currentUser) {
-                const tableBody = document.getElementById('payments-table').querySelector('tbody');
-                tableBody.innerHTML = ''; // Limpa a tabela antes de adicionar novas linhas
+                const paymentsTable = document.getElementById('payments-table').getElementsByTagName('tbody')[0];
+                paymentsTable.innerHTML = '';
 
-                const payments = JSON.parse(localStorage.getItem('payments')) || [];
-                payments.forEach(payment => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${payment.userId}</td>
-                        <td>${payment.name}</td>
-                        <td>$${payment.amount}</td>
-                        <td>${payment.date}</td>
-                    `;
-                    tableBody.appendChild(row);
+                currentUser.payments.forEach(payment => {
+                    const row = paymentsTable.insertRow();
+                    row.insertCell().textContent = currentUser.id;
+                    row.insertCell().textContent = currentUser.name;
+                    row.insertCell().textContent = payment.amount.toFixed(2);
+                    row.insertCell().textContent = payment.date;
                 });
 
                 showSection('payments-section');
                 hideSection('main-section');
             } else {
-                alert('Você deve estar logado para ver os pagamentos.');
+                alert('Você deve estar logado para acessar esta seção.');
+            }
+        }
+
+        function sendPaymentsToWhatsApp() {
+            if (currentUser) {
+                const payments = currentUser.payments.map(payment => 
+                    `ID do Usuário: ${currentUser.id}\nNome: ${currentUser.name}\nValor: $${payment.amount.toFixed(2)}\nData: ${payment.date}`).join('\n\n');
+
+                const message = encodeURIComponent(`Pagamentos Realizados:\n\n${payments}`);
+                const whatsappUrl = `https://wa.me/${managerPhoneNumber}?text=${message}`;
+                window.open(whatsappUrl, '_blank');
+            } else {
+                alert('Você deve estar logado para enviar dados para o WhatsApp.');
+            }
+        }
+
+        function showTransactions() {
+            if (currentManager) {
+                const transactionsTable = document.getElementById('transactions-table').getElementsByTagName('tbody')[0];
+                transactionsTable.innerHTML = '';
+
+                Object.values(users).forEach(user => {
+                    user.payments.forEach(payment => {
+                        const row = transactionsTable.insertRow();
+                        row.insertCell().textContent = user.id;
+                        row.insertCell().textContent = user.name;
+                        row.insertCell().textContent = payment.amount.toFixed(2);
+                        row.insertCell().textContent = payment.date;
+                    });
+                });
+
+                showSection('transactions-section');
+                hideSection('manager-login-section');
+            } else {
+                alert('Você deve estar logado como gerente para ver as transações.');
             }
         }
 
         function logout() {
-            localStorage.removeItem('currentUser');
             currentUser = null;
-            document.getElementById('user-id').value = '';
-            document.getElementById('user-code').value = '';
+            localStorage.removeItem('currentUser');
             showSection('login-section');
-            hideSection('payment-section');
-            hideSection('payments-section');
             hideSection('main-section');
         }
 
-        // Carregar o usuário atual do armazenamento local, se existir
+        function showManagerSection() {
+            showSection('manager-login-section');
+            hideSection('transactions-section');
+        }
+
+        function showKeypad(inputElement) {
+            const keypad = document.getElementById('numeric-keypad');
+            keypad.style.display = 'block';
+            keypad.style.left = `${inputElement.getBoundingClientRect().left}px`;
+            keypad.style.top = `${inputElement.getBoundingClientRect().bottom + window.scrollY}px`;
+            currentInput = inputElement;
+        }
+
+        function hideKeypad() {
+            document.getElementById('numeric-keypad').style.display = 'none';
+        }
+
+        function appendToInput(value) {
+            if (currentInput) {
+                const currentValue = currentInput.value;
+                currentInput.value = currentValue + value;
+            }
+        }
+
+        function clearInput() {
+            if (currentInput) {
+                currentInput.value = '';
+            }
+        }
+
+        // Mostrar o teclado numérico ao focar em campos de entrada numérica
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('focus', () => showKeypad(input));
+            input.addEventListener('blur', () => hideKeypad());
+        });
+
+        // Mostrar a seção de login se não houver usuário atual
         document.addEventListener('DOMContentLoaded', () => {
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (savedUser) {
