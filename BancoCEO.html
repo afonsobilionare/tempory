@@ -196,6 +196,8 @@
         <div class="main-section section" id="main-section">
             <h2>Bem-vindo!</h2>
             <p class="message" id="user-name"></p>
+            <button id="toggle-balance" onclick="toggleBalance()">Mostrar Saldo</button>
+            <p id="user-balance" style="display:none;"></p>
             <button onclick="showPaymentSection()">Realizar Pagamento</button>
             <button onclick="showPayments()">Ver Pagamentos</button>
             <button class="btn-cancel" onclick="logout()">Sair</button>
@@ -267,10 +269,12 @@
 
     <script>
         const users = {
-            '1001': { id: '1001', name: 'Lorena', code: '1234', balance: 1000, payments: [] },
-            '1002': { id: '1002', name: 'Elinha', code: '5678', balance: 1500, payments: [] },
-            '1003': { id: '1003', name: 'Lana', code: '9101', balance: 2000, payments: [] },
-            '1000': { id: '1000', name: 'Afonso Mendes', code: '9000', balance: 2000, payments: [] }
+            '1023': { id: '1023', name: 'Isabela', code: '9876', balance: 5, payments: [] },
+            '1090': { id: '1090', name: 'Paulo Ricardo', code: '4564', balance: 5, payments: [] },
+            '1100': { id: '1100', name: 'Matheus', code: '4029', balance: 5, payments: [] },
+            '1022': { id: '1022', name: 'Ana Heloísa', code: '5678', balance: 5, payments: [] },
+            '1050': { id: '1050', name: 'Natália', code: '0101', balance: 5, payments: [] },
+            '1013': { id: '1013', name: 'Breno', code: '9101', balance: 5, payments: [] },
         };
 
         const managers = {
@@ -301,7 +305,8 @@
             if (user && user.code === userCode) {
                 currentUser = user;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                document.getElementById('user-name').textContent = `Olá, ${user.name}! Saldo: $${user.balance.toFixed(2)}`;
+                document.getElementById('user-name').textContent = `Olá, ${user.name}!`;
+                document.getElementById('user-balance').textContent = `Saldo: $${user.balance.toFixed(2)}`;
                 showSection('main-section');
                 hideSection('login-section');
             } else {
@@ -320,6 +325,17 @@
                 hideSection('manager-login-section');
             } else {
                 alert('ID ou senha do gerente incorretos.');
+            }
+        }
+
+        function toggleBalance() {
+            const balanceElement = document.getElementById('user-balance');
+            if (balanceElement.style.display === 'none') {
+                balanceElement.style.display = 'block';
+                document.getElementById('toggle-balance').textContent = 'Esconder Saldo';
+            } else {
+                balanceElement.style.display = 'none';
+                document.getElementById('toggle-balance').textContent = 'Mostrar Saldo';
             }
         }
 
@@ -350,8 +366,15 @@
                 if (amount > 0 && amount <= currentUser.balance) {
                     currentUser.balance -= amount;
                     currentUser.payments.push({ amount, date: new Date().toLocaleString() });
+                    
+                    // Se o pagamento é igual ao saldo, zera o saldo
+                    if (currentUser.balance === 0) {
+                        alert('Pagamento realizado com sucesso! Saldo zerado.');
+                    } else {
+                        alert('Pagamento realizado com sucesso!');
+                    }
+
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    alert('Pagamento realizado com sucesso!');
                     showMainSection();
                 } else {
                     alert('Valor inválido ou saldo insuficiente.');
@@ -464,7 +487,8 @@
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (savedUser) {
                 currentUser = savedUser;
-                document.getElementById('user-name').textContent = `Olá, ${savedUser.name}! Saldo: $${savedUser.balance.toFixed(2)}`;
+                document.getElementById('user-name').textContent = `Olá, ${savedUser.name}!`;
+                document.getElementById('user-balance').textContent = `Saldo: $${savedUser.balance.toFixed(2)}`;
                 showSection('main-section');
             } else {
                 showSection('login-section');
